@@ -20,6 +20,11 @@ EXTRACTION_SYSTEM = """
 Не добавляй пояснения, Markdown и другие ключи.
 """.strip()
 
+RETRY_INSTRUCTION = """
+Предыдущий ответ не прошёл строгую JSON-схему. Верни исправленный JSON с теми же
+четырьмя ключами; не добавляй пояснения и не изменяй данные документа.
+""".strip()
+
 FEW_SHOT_EXAMPLES = (
     PromptExample(
         attribute_code="DN",
