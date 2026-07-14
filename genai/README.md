@@ -40,28 +40,57 @@
 ## Запуск
 
 ```bash
-uv sync --locked
-LLM_FAKE=1 uv run python -m eval.run_eval  # baseline видно сразу (с галлюцинациями)
+uv sync --locked --all-groups
+LLM_FAKE=1 uv run --frozen python -m eval.run_eval --seed 42
 ```
+
+Eval использует одинаковый детерминированный fake-random поток для baseline и grounded на
+каждом кейсе. Другой воспроизводимый сценарий можно получить через `--seed N`.
 
 Проверки качества запускаются из директории `genai/`:
 
 ```bash
 uv lock --check
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy
-LLM_FAKE=1 uv run pytest
+uv run --frozen ruff check --config pyproject.toml . ../scripts
+uv run --frozen ruff format --check --config pyproject.toml . ../scripts
+uv run --frozen mypy
+LLM_FAKE=1 uv run --frozen pytest
 ```
+
+## Реализованное решение
+
+Pipeline grounded extractor:
+
+```text
+registry/config → few-shot prompt → LLM → strict Pydantic parser → exact grounding → result
+```
+
+- документ сериализуется как недоверенное JSON-поле;
+- direct и fenced JSON валидируются отдельной строгой моделью;
+- schema error получает максимум одну contextual retry-попытку;
+- ненулевое значение требует точную цитату и подтверждение значения внутри неё;
+- baseline сохранён permissive для честного сравнения;
+- 16-кейсовый eval считает метрики с явными знаменателями и печатает таблицы.
+
+Результат при seed 42:
+
+| Стратегия | Accuracy | Hallucinations / answered | Coverage |
+|---|---:|---:|---:|
+| baseline | 2/16 (12,5%) | 8/16 (50,0%) | 100,0% |
+| grounded | 3/16 (18,8%) | 0/8 (0,0%) | 50,0% |
+
+Grounding полностью убирает неподтверждённые ответы, но намеренно не скрывает остаточную
+проблему: реальная цитата может содержать число, относящееся к другому атрибуту. Подробные
+решения, знаменатели метрик и компромиссы описаны в [`NOTES.md`](NOTES.md).
 
 ## Критерии приёмки
 
-- [ ] Структурированный вывод (`value/unit/confidence/source_quote`), валидируется Pydantic.
-- [ ] Грунтинг-фильтр реально отсекает выдуманные значения.
-- [ ] Few-shot промпт вынесен в `app/prompts/`.
-- [ ] Устойчивый парсинг + осмысленный retry (не молчаливое проглатывание).
-- [ ] Эвал baseline vs grounded, метрика галлюцинаций, выводы.
-- [ ] Git-история с conventional commits + заполненный `NOTES.md`.
+- [x] Структурированный вывод (`value/unit/confidence/source_quote`), валидируется Pydantic.
+- [x] Грунтинг-фильтр реально отсекает выдуманные значения.
+- [x] Few-shot промпт вынесен в `app/prompts/`.
+- [x] Устойчивый парсинг + осмысленный retry (не молчаливое проглатывание).
+- [x] Эвал baseline vs grounded, метрика галлюцинаций, выводы.
+- [x] Git-история с conventional commits + заполненный `NOTES.md`.
 
 ## Что оцениваем дополнительно (опиши в `NOTES.md`)
 
