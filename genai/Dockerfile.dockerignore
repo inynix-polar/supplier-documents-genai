@@ -1,0 +1,14 @@
+# Dockerfile собирается из корня репозитория; передаём только нужные ему файлы.
+*
+!genai/
+genai/*
+!genai/pyproject.toml
+!genai/uv.lock
+!genai/app/
+!genai/app/**
+!genai/eval/
+!genai/eval/**
+!genai/tests/
+!genai/tests/**
+!scripts/
+!scripts/**
