@@ -27,6 +27,9 @@ def _extract_request(user: str) -> tuple[str, str | None]:
     try:
         payload: object = json.loads(user)
     except json.JSONDecodeError:
+        marker = "Текст: "
+        if marker in user:
+            return user.split(marker, maxsplit=1)[1], "мм"
         return user, "мм"
     if isinstance(payload, dict):
         request = cast(dict[object, object], payload)
@@ -45,16 +48,25 @@ def _extract_request(user: str) -> tuple[str, str | None]:
 
 
 class LLMClient:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        rng: random.Random | None = None,
+        fake_delay_seconds: float = 0.05,
+    ) -> None:
+        if fake_delay_seconds < 0:
+            raise ValueError("задержка fake-клиента не может быть отрицательной")
         self.fake = os.getenv("LLM_FAKE", "1") == "1"
+        self._rng = rng if rng is not None else random.Random()
+        self._fake_delay_seconds = fake_delay_seconds
 
     async def complete(self, system: str, user: str) -> str:
         if self.fake:
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(self._fake_delay_seconds)
             # Пытаемся «извлечь» число из документа; в 25% случаев галлюцинируем.
             document, unit = _extract_request(user)
             m = re.search(r"(\d+(?:[.,]\d+)?)", document)
-            if m and random.random() > 0.25:
+            if m and self._rng.random() > 0.25:
                 value = m.group(1)
                 quote = document[max(0, m.start() - 10) : m.end() + 10].strip()
             else:
