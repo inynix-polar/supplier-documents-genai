@@ -64,6 +64,17 @@ def test_rejects_value_not_supported_by_existing_quote() -> None:
     assert result.rejected_reason == "value_not_supported_by_quote"
 
 
+def test_rejects_missing_source_quote_with_specific_reason() -> None:
+    result = ground_response(
+        response("100", None),
+        "Задвижка DN 100.",
+        get_attribute("DN"),
+    )
+
+    assert result.value is None
+    assert result.rejected_reason == "missing_source_quote"
+
+
 def test_accepts_ocr_value_supported_by_exact_quote() -> None:
     result = ground_response(
         response("200", "D N 2 0 0"),

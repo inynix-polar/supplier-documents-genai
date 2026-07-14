@@ -34,11 +34,10 @@ class LLMExtractionResponse(BaseModel):
     @model_validator(mode="after")
     def validate_null_contract(self) -> Self:
         """Проверить согласованность результата «значение найдено/не найдено»."""
-        if self.value is None:
-            if self.unit is not None or self.source_quote is not None or self.confidence != "low":
-                raise ValueError("для отсутствующего значения unit/source_quote должны быть null")
-        elif self.source_quote is None:
-            raise ValueError("найденное значение требует source_quote")
+        if self.value is None and (
+            self.unit is not None or self.source_quote is not None or self.confidence != "low"
+        ):
+            raise ValueError("для отсутствующего значения unit/source_quote должны быть null")
         return self
 
 

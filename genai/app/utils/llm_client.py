@@ -22,17 +22,26 @@ class CompletionClient(Protocol):
         ...
 
 
-def _extract_document(user: str) -> str:
-    """Получить document из JSON-запроса или сохранить legacy-текст baseline."""
+def _extract_request(user: str) -> tuple[str, str | None]:
+    """Получить document/unit из JSON или сохранить legacy-поведение baseline."""
     try:
         payload: object = json.loads(user)
     except json.JSONDecodeError:
-        return user
+        return user, "мм"
     if isinstance(payload, dict):
-        document = cast(dict[object, object], payload).get("document")
+        request = cast(dict[object, object], payload)
+        document = request.get("document")
         if isinstance(document, str):
-            return document
-    return user
+            attribute = request.get("attribute")
+            if isinstance(attribute, dict):
+                canonical_unit = cast(dict[object, object], attribute).get(
+                    "canonical_unit",
+                    "мм",
+                )
+                if isinstance(canonical_unit, str) or canonical_unit is None:
+                    return document, canonical_unit
+            return document, "мм"
+    return user, "мм"
 
 
 class LLMClient:
@@ -43,7 +52,7 @@ class LLMClient:
         if self.fake:
             await asyncio.sleep(0.05)
             # Пытаемся «извлечь» число из документа; в 25% случаев галлюцинируем.
-            document = _extract_document(user)
+            document, unit = _extract_request(user)
             m = re.search(r"(\d+(?:[.,]\d+)?)", document)
             if m and random.random() > 0.25:
                 value = m.group(1)
@@ -54,7 +63,7 @@ class LLMClient:
             return (
                 "```json\n"
                 + json.dumps(
-                    {"value": value, "unit": "мм", "confidence": "high", "source_quote": quote},
+                    {"value": value, "unit": unit, "confidence": "high", "source_quote": quote},
                     ensure_ascii=False,
                 )
                 + "\n```"

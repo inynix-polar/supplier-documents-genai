@@ -81,7 +81,10 @@ async def test_retries_schema_error_once_and_returns_grounded_value() -> None:
     assert result.value == "100"
     assert len(client.calls) == 2
     assert RETRY_INSTRUCTION in client.calls[1][0]
-    assert client.calls[0][1] == client.calls[1][1]
+    retry_request = json.loads(client.calls[1][1])
+    assert retry_request["document"] == "Задвижка DN 100."
+    assert retry_request["previous_response"] == "не JSON"
+    assert "json_invalid" in retry_request["validation_errors"]
 
 
 @pytest.mark.asyncio
@@ -111,6 +114,20 @@ async def test_does_not_retry_well_formed_hallucination() -> None:
 
     assert result.value is None
     assert result.rejected_reason == "source_quote_not_found"
+    assert len(client.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_missing_quote_is_grounding_rejection_without_retry() -> None:
+    client = ScriptedClient([llm_json("100", None)])
+
+    result = await extract_attribute_grounded(
+        "Задвижка DN 100.",
+        "DN",
+        client=client,
+    )
+
+    assert result.rejected_reason == "missing_source_quote"
     assert len(client.calls) == 1
 
 
