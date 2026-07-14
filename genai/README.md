@@ -40,8 +40,18 @@
 ## Запуск
 
 ```bash
-pip install -r requirements.txt
-LLM_FAKE=1 python -m eval.run_eval     # baseline видно сразу (с галлюцинациями)
+uv sync --locked
+LLM_FAKE=1 uv run python -m eval.run_eval  # baseline видно сразу (с галлюцинациями)
+```
+
+Проверки качества запускаются из директории `genai/`:
+
+```bash
+uv lock --check
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy
+LLM_FAKE=1 uv run pytest
 ```
 
 ## Критерии приёмки
