@@ -12,3 +12,12 @@ genai/*
 !genai/tests/**
 !scripts/
 !scripts/**
+
+# Повторно исключаем локальные кеши внутри разрешённых директорий.
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.DS_Store
