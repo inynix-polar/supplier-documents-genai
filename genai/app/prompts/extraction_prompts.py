@@ -8,4 +8,4 @@ source_quote (ДОСЛОВНАЯ цитата из текста, откуда в
 """.strip()
 
 # TODO(кандидат): 1-2 few-shot примера (арматура/трубопровод): вход-текст + эталонный JSON.
-FEW_SHOT_EXAMPLES: list[dict] = []
+FEW_SHOT_EXAMPLES: list[dict[str, object]] = []
