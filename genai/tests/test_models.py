@@ -25,6 +25,10 @@ def test_llm_response_accepts_required_nullable_fields() -> None:
             '{"value":"100","unit":"мм","confidence":"high",'
             '"source_quote":"DN 100","explanation":"из текста"}'
         ),
+        '{"value":" ","unit":"мм","confidence":"high","source_quote":"DN 100"}',
+        '{"value":"100","unit":"мм","confidence":"high","source_quote":""}',
+        '{"value":"100","unit":"мм","confidence":"high","source_quote":null}',
+        '{"value":null,"unit":"мм","confidence":"high","source_quote":"DN 100"}',
     ],
 )
 def test_llm_response_rejects_schema_violations(payload: str) -> None:

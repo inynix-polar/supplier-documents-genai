@@ -45,3 +45,15 @@ async def test_baseline_maps_llm_response(monkeypatch: pytest.MonkeyPatch) -> No
         confidence="high",
         source_quote="DN 100",
     )
+
+
+@pytest.mark.asyncio
+async def test_baseline_keeps_permissive_confidence(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_complete(_self: LLMClient, system: str, user: str) -> str:
+        return '{"value":"100","unit":"мм","confidence":"certain","source_quote":"DN 100"}'
+
+    monkeypatch.setattr(LLMClient, "complete", fake_complete)
+
+    result = await extract_attribute_baseline("Задвижка DN 100.", "DN")
+
+    assert result.confidence == "certain"
