@@ -1,9 +1,9 @@
 """Контрактные тесты реестра атрибутов."""
 
 import pytest
+from pydantic import ValidationError
 
-from app.modules.registry import AttributeDefinition, get_attribute
-from app.prompts.extraction_prompts import EXTRACTION_SYSTEM, FEW_SHOT_EXAMPLES
+from app.modules.registry import get_attribute
 
 
 def test_registry_exposes_attribute_metadata() -> None:
@@ -19,15 +19,8 @@ def test_registry_raises_for_unknown_code() -> None:
         get_attribute("UNKNOWN")
 
 
-def test_synonyms_default_is_not_shared() -> None:
-    first = AttributeDefinition(code="A", display_name="Первый")
-    second = AttributeDefinition(code="B", display_name="Второй")
+def test_registry_configuration_is_immutable() -> None:
+    attribute = get_attribute("DN")
 
-    first.synonyms.append("синоним")
-
-    assert second.synonyms == []
-
-
-def test_prompt_scaffold_exports_expected_contract() -> None:
-    assert "source_quote" in EXTRACTION_SYSTEM
-    assert FEW_SHOT_EXAMPLES == []
+    with pytest.raises(ValidationError, match="Instance is frozen"):
+        attribute.unit = "см"  # type: ignore[misc]

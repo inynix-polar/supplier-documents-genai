@@ -10,18 +10,9 @@ import json
 import re
 from typing import cast
 
-from pydantic import BaseModel
-
+from app.models import ExtractedValue as ExtractedValue
 from app.modules.registry import get_attribute
 from app.utils.llm_client import LLMClient
-
-
-class ExtractedValue(BaseModel):
-    value: str | None = None
-    unit: str | None = None
-    confidence: str | None = None  # high | medium | low
-    source_quote: str | None = None
-    rejected_reason: str | None = None  # почему отбраковано (для грунтинг-фильтра)
 
 
 def _loose_json(raw: str) -> dict[str, object] | None:
