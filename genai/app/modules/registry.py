@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 ValueKind = Literal["integer", "decimal", "text"]
 
@@ -17,6 +17,7 @@ class AttributeDefinition(BaseModel):
     value_kind: ValueKind
     unit: str | None = None
     synonyms: tuple[str, ...] = ()
+    max_value_length: int = Field(ge=1, le=1024)
 
 
 _ATTRS = {
@@ -26,6 +27,7 @@ _ATTRS = {
         value_kind="integer",
         unit="мм",
         synonyms=("условный проход", "Ду", "DN", "DY"),
+        max_value_length=6,
     ),
     "PN": AttributeDefinition(
         code="PN",
@@ -33,12 +35,14 @@ _ATTRS = {
         value_kind="decimal",
         unit="МПа",
         synonyms=("рабочее давление", "Ру", "PN"),
+        max_value_length=16,
     ),
     "MATERIAL": AttributeDefinition(
         code="MATERIAL",
         display_name="Материал корпуса",
         value_kind="text",
         synonyms=("материал", "исполнение", "сталь"),
+        max_value_length=256,
     ),
 }
 

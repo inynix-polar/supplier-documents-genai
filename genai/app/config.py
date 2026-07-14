@@ -9,7 +9,6 @@ class ExtractionPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     max_attempts: int = Field(default=2, ge=1, le=3)
-    require_exact_quote: bool = True
     verify_value_in_quote: bool = True
 
 
