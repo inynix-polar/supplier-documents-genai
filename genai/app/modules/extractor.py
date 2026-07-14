@@ -5,30 +5,35 @@ Baseline: «текст → JSON», парсинг best-effort, БЕЗ грунт
 Задача — extract_attribute_grounded: structured output + few-shot + грунтинг-фильтр
 (source_quote обязан присутствовать в тексте, иначе value=None).
 """
-import re
+
 import json
+import re
+from typing import cast
 
 from pydantic import BaseModel
 
-from app.modules.registry import AttributeDefinition, get_attribute
+from app.modules.registry import get_attribute
 from app.utils.llm_client import LLMClient
 
 
 class ExtractedValue(BaseModel):
     value: str | None = None
     unit: str | None = None
-    confidence: str | None = None       # high | medium | low
+    confidence: str | None = None  # high | medium | low
     source_quote: str | None = None
     rejected_reason: str | None = None  # почему отбраковано (для грунтинг-фильтра)
 
 
-def _loose_json(raw: str) -> dict | None:
+def _loose_json(raw: str) -> dict[str, object] | None:
     cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.IGNORECASE)
     cleaned = re.sub(r"\s*```$", "", cleaned).strip()
     try:
-        return json.loads(cleaned)
+        parsed: object = json.loads(cleaned)
     except json.JSONDecodeError:
         return None
+    if not isinstance(parsed, dict) or not all(isinstance(key, str) for key in parsed):
+        return None
+    return cast(dict[str, object], parsed)
 
 
 async def extract_attribute_baseline(text: str, attr_code: str) -> ExtractedValue:
@@ -40,7 +45,8 @@ async def extract_attribute_baseline(text: str, attr_code: str) -> ExtractedValu
         user=f"Атрибут: {attr.display_name}\nТекст: {text}",
     )
     data = _loose_json(raw) or {}
-    return ExtractedValue(**{k: data.get(k) for k in ("value", "unit", "confidence", "source_quote")})
+    payload = {key: data.get(key) for key in ("value", "unit", "confidence", "source_quote")}
+    return ExtractedValue.model_validate(payload)
 
 
 async def extract_attribute_grounded(text: str, attr_code: str) -> ExtractedValue:
