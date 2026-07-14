@@ -27,10 +27,18 @@ def test_llm_response_accepts_required_nullable_fields() -> None:
         ),
         '{"value":" ","unit":"мм","confidence":"high","source_quote":"DN 100"}',
         '{"value":"100","unit":"мм","confidence":"high","source_quote":""}',
-        '{"value":"100","unit":"мм","confidence":"high","source_quote":null}',
         '{"value":null,"unit":"мм","confidence":"high","source_quote":"DN 100"}',
     ],
 )
 def test_llm_response_rejects_schema_violations(payload: str) -> None:
     with pytest.raises(ValidationError):
         LLMExtractionResponse.model_validate_json(payload)
+
+
+def test_llm_response_leaves_missing_quote_for_grounding_filter() -> None:
+    response = LLMExtractionResponse.model_validate_json(
+        '{"value":"100","unit":"мм","confidence":"high","source_quote":null}'
+    )
+
+    assert response.value == "100"
+    assert response.source_quote is None

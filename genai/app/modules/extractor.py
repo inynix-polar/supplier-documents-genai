@@ -19,6 +19,7 @@ from app.modules.grounding import ground_response
 from app.modules.registry import get_attribute
 from app.prompts.extraction_prompts import (
     RETRY_INSTRUCTION,
+    build_retry_user_prompt,
     build_system_prompt,
     build_user_prompt,
 )
@@ -58,7 +59,7 @@ async def extract_attribute_baseline(
 ) -> ExtractedValue:
     """Текущий подход — доверяем модели как есть."""
     attr = get_attribute(attr_code)
-    llm = client or LLMClient()
+    llm = client if client is not None else LLMClient()
     raw = await llm.complete(
         system="Извлеки значение атрибута. Верни JSON: value, unit, confidence, source_quote.",
         user=f"Атрибут: {attr.display_name}\nТекст: {text}",
@@ -77,16 +78,19 @@ async def extract_attribute_grounded(
 ) -> ExtractedValue:
     """Извлечь атрибут со строгим парсингом, bounded retry и grounding."""
     attribute = get_attribute(attr_code)
-    llm = client or LLMClient()
+    llm = client if client is not None else LLMClient()
     system = build_system_prompt()
-    user = build_user_prompt(text, attribute)
+    original_user = build_user_prompt(text, attribute)
+    attempt_user = original_user
 
     for attempt in range(policy.max_attempts):
         attempt_system = system if attempt == 0 else f"{system}\n\n{RETRY_INSTRUCTION}"
-        raw = await llm.complete(system=attempt_system, user=user)
+        raw = await llm.complete(system=attempt_system, user=attempt_user)
         try:
             response = _parse_llm_response(raw)
-        except ValidationError:
+        except ValidationError as error:
+            error_types = tuple(str(detail["type"]) for detail in error.errors())
+            attempt_user = build_retry_user_prompt(original_user, raw, error_types)
             continue
         return ground_response(response, text, attribute, policy)
 

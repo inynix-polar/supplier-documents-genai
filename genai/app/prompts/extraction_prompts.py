@@ -1,6 +1,7 @@
 """Промпты и типизированные few-shot примеры по техническим документам."""
 
 import json
+from typing import cast
 
 from app.models import LLMExtractionResponse, PromptExample
 from app.modules.registry import AttributeDefinition, get_attribute
@@ -79,3 +80,18 @@ def build_user_prompt(text: str, attribute: AttributeDefinition) -> str:
         },
         ensure_ascii=False,
     )
+
+
+def build_retry_user_prompt(
+    original_user: str,
+    previous_response: str,
+    validation_errors: tuple[str, ...],
+) -> str:
+    """Передать модели исходный запрос и безопасно сериализованный контекст ошибки."""
+    request: object = json.loads(original_user)
+    if not isinstance(request, dict):
+        raise ValueError("исходный запрос должен быть JSON-объектом")
+    payload = dict(cast(dict[str, object], request))
+    payload["previous_response"] = previous_response
+    payload["validation_errors"] = list(validation_errors)
+    return json.dumps(payload, ensure_ascii=False)

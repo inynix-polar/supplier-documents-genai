@@ -58,6 +58,27 @@ async def test_fake_client_reads_document_from_json_request(
 
 
 @pytest.mark.asyncio
+async def test_fake_client_uses_canonical_unit_from_attribute(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_FAKE", "1")
+    monkeypatch.setattr(random, "random", lambda: 0.5)
+    user = json.dumps(
+        {
+            "attribute": {"code": "PN", "canonical_unit": "МПа"},
+            "document": "Рабочее давление PN 16 МПа.",
+        },
+        ensure_ascii=False,
+    )
+
+    raw = await LLMClient().complete(system="", user=user)
+    payload = _loose_json(raw)
+
+    assert payload is not None
+    assert payload["unit"] == "МПа"
+
+
+@pytest.mark.asyncio
 async def test_live_client_is_not_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_FAKE", "0")
 
