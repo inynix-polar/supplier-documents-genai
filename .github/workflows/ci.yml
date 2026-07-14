@@ -70,3 +70,24 @@ jobs:
       - name: Запустить тесты
         working-directory: genai
         run: uv run --frozen pytest
+
+      - name: Собрать тестовый Docker-образ
+        run: >-
+          docker build
+          --target test
+          --file genai/Dockerfile
+          --tag supplier-documents-genai:test
+          .
+
+      - name: Запустить тесты в Docker
+        run: docker run --rm supplier-documents-genai:test
+
+      - name: Собрать минимальный Docker runtime
+        run: >-
+          docker build
+          --file genai/Dockerfile
+          --tag supplier-documents-genai:eval
+          .
+
+      - name: Запустить eval в Docker
+        run: docker run --rm supplier-documents-genai:eval --seed 42
