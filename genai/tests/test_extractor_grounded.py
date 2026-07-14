@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from app.config import ExtractionPolicy
 from app.modules.extractor import _parse_llm_response, extract_attribute_grounded
 from app.prompts.extraction_prompts import RETRY_INSTRUCTION
+from app.utils.llm_client import LLMClient
 
 
 class ScriptedClient:
@@ -162,9 +163,9 @@ async def test_sends_document_as_json_data() -> None:
 @pytest.mark.asyncio
 async def test_default_fake_value_passes_grounding(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_FAKE", "1")
-    monkeypatch.setattr(random, "random", lambda: 0.5)
+    client = LLMClient(rng=random.Random(0), fake_delay_seconds=0)
 
-    result = await extract_attribute_grounded("Задвижка DN 100.", "DN")
+    result = await extract_attribute_grounded("Задвижка DN 100.", "DN", client=client)
 
     assert result.value == "100"
     assert result.rejected_reason is None
@@ -173,9 +174,9 @@ async def test_default_fake_value_passes_grounding(monkeypatch: pytest.MonkeyPat
 @pytest.mark.asyncio
 async def test_default_fake_hallucination_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_FAKE", "1")
-    monkeypatch.setattr(random, "random", lambda: 0.0)
+    client = LLMClient(rng=random.Random(1), fake_delay_seconds=0)
 
-    result = await extract_attribute_grounded("Задвижка DN 100.", "DN")
+    result = await extract_attribute_grounded("Задвижка DN 100.", "DN", client=client)
 
     assert result.value is None
     assert result.rejected_reason == "source_quote_not_found"
