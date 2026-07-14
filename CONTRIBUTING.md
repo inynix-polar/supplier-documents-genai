@@ -31,9 +31,15 @@ uv run --frozen ruff check --config pyproject.toml . ../scripts
 uv run --frozen ruff format --check --config pyproject.toml . ../scripts
 uv run --frozen mypy
 LLM_FAKE=1 uv run --frozen pytest
+cd ..
+docker build --target test --file genai/Dockerfile \
+  --tag supplier-documents-genai:test .
+docker run --rm supplier-documents-genai:test
+docker build --file genai/Dockerfile --tag supplier-documents-genai:eval .
+docker run --rm supplier-documents-genai:eval --seed 42
 ```
 
-Все проверки сразу:
+Все Python-проверки через hooks:
 
 ```bash
 uv run --project genai pre-commit run --all-files
