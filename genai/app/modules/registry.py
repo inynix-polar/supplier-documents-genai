@@ -18,6 +18,7 @@ class AttributeDefinition(BaseModel):
     unit: str | None = None
     synonyms: tuple[str, ...] = ()
     max_value_length: int = Field(ge=1, le=1024)
+    ocr_digit_aliases: tuple[tuple[str, str], ...] = ()
 
 
 _ATTRS = {
@@ -28,6 +29,7 @@ _ATTRS = {
         unit="мм",
         synonyms=("условный проход", "Ду", "DN", "DY"),
         max_value_length=6,
+        ocr_digit_aliases=(("O", "0"), ("О", "0")),
     ),
     "PN": AttributeDefinition(
         code="PN",
