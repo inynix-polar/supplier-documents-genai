@@ -1,32 +1,44 @@
-"""Мини-реестр атрибутов."""
+"""Мини-реестр атрибутов и правил нормализации."""
 
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict
+
+ValueKind = Literal["integer", "decimal", "text"]
 
 
 class AttributeDefinition(BaseModel):
+    """Неизменяемая конфигурация одного извлекаемого атрибута."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
     code: str
     display_name: str
+    value_kind: ValueKind
     unit: str | None = None
-    synonyms: list[str] = Field(default_factory=list)
+    synonyms: tuple[str, ...] = ()
 
 
 _ATTRS = {
     "DN": AttributeDefinition(
         code="DN",
         display_name="Номинальный диаметр",
+        value_kind="integer",
         unit="мм",
-        synonyms=["условный проход", "Ду", "DN", "DY"],
+        synonyms=("условный проход", "Ду", "DN", "DY"),
     ),
     "PN": AttributeDefinition(
         code="PN",
         display_name="Условное давление",
+        value_kind="decimal",
         unit="МПа",
-        synonyms=["рабочее давление", "Ру", "PN"],
+        synonyms=("рабочее давление", "Ру", "PN"),
     ),
     "MATERIAL": AttributeDefinition(
         code="MATERIAL",
         display_name="Материал корпуса",
-        synonyms=["материал", "исполнение", "сталь"],
+        value_kind="text",
+        synonyms=("материал", "исполнение", "сталь"),
     ),
 }
 
