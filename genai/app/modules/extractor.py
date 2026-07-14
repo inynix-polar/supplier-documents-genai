@@ -10,9 +10,24 @@ import json
 import re
 from typing import cast
 
+from pydantic import ValidationError
+
+from app.config import DEFAULT_EXTRACTION_POLICY, ExtractionPolicy
 from app.models import ExtractedValue as ExtractedValue
+from app.models import LLMExtractionResponse
+from app.modules.grounding import ground_response
 from app.modules.registry import get_attribute
-from app.utils.llm_client import LLMClient
+from app.prompts.extraction_prompts import (
+    RETRY_INSTRUCTION,
+    build_system_prompt,
+    build_user_prompt,
+)
+from app.utils.llm_client import CompletionClient, LLMClient
+
+_FENCED_JSON_RE = re.compile(
+    r"\A```(?:json)?[ \t]*(?:\r?\n)?(?P<payload>.*?)(?:\r?\n)?```[ \t]*\Z",
+    flags=re.IGNORECASE | re.DOTALL,
+)
 
 
 def _loose_json(raw: str) -> dict[str, object] | None:
@@ -27,10 +42,23 @@ def _loose_json(raw: str) -> dict[str, object] | None:
     return cast(dict[str, object], parsed)
 
 
-async def extract_attribute_baseline(text: str, attr_code: str) -> ExtractedValue:
+def _parse_llm_response(raw: str) -> LLMExtractionResponse:
+    """Разобрать строгий direct или целиком fenced JSON без вырезания из болтовни."""
+    cleaned = raw.strip()
+    fenced = _FENCED_JSON_RE.fullmatch(cleaned)
+    payload = fenced.group("payload").strip() if fenced else cleaned
+    return LLMExtractionResponse.model_validate_json(payload)
+
+
+async def extract_attribute_baseline(
+    text: str,
+    attr_code: str,
+    *,
+    client: CompletionClient | None = None,
+) -> ExtractedValue:
     """Текущий подход — доверяем модели как есть."""
     attr = get_attribute(attr_code)
-    llm = LLMClient()
+    llm = client or LLMClient()
     raw = await llm.complete(
         system="Извлеки значение атрибута. Верни JSON: value, unit, confidence, source_quote.",
         user=f"Атрибут: {attr.display_name}\nТекст: {text}",
@@ -40,11 +68,26 @@ async def extract_attribute_baseline(text: str, attr_code: str) -> ExtractedValu
     return ExtractedValue.model_validate(payload)
 
 
-async def extract_attribute_grounded(text: str, attr_code: str) -> ExtractedValue:
-    """
-    TODO(кандидат):
-      - few-shot промпт (вынести в app/prompts/), structured output;
-      - устойчивый парсинг + осмысленный retry;
-      - ГРУНТИНГ: если source_quote отсутствует в тексте — value=None + rejected_reason.
-    """
-    raise NotImplementedError
+async def extract_attribute_grounded(
+    text: str,
+    attr_code: str,
+    *,
+    client: CompletionClient | None = None,
+    policy: ExtractionPolicy = DEFAULT_EXTRACTION_POLICY,
+) -> ExtractedValue:
+    """Извлечь атрибут со строгим парсингом, bounded retry и grounding."""
+    attribute = get_attribute(attr_code)
+    llm = client or LLMClient()
+    system = build_system_prompt()
+    user = build_user_prompt(text, attribute)
+
+    for attempt in range(policy.max_attempts):
+        attempt_system = system if attempt == 0 else f"{system}\n\n{RETRY_INSTRUCTION}"
+        raw = await llm.complete(system=attempt_system, user=user)
+        try:
+            response = _parse_llm_response(raw)
+        except ValidationError:
+            continue
+        return ground_response(response, text, attribute, policy)
+
+    return ExtractedValue(rejected_reason="invalid_model_response")
