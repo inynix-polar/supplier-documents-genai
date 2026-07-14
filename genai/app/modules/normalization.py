@@ -28,11 +28,31 @@ def _collapse_spaced_digits(value: str) -> str:
 
 
 def _apply_ocr_digit_aliases(value: str, attribute: AttributeDefinition) -> str:
-    """Применить только явно разрешённые реестром OCR-замены цифр."""
-    normalized = value
-    for source, target in attribute.ocr_digit_aliases:
-        normalized = normalized.replace(source, target).replace(source.casefold(), target)
-    return normalized
+    """Применить OCR-замены только внутри числовых последовательностей."""
+    if not attribute.ocr_digit_aliases:
+        return value
+
+    alias_patterns = sorted(
+        {re.escape(source) for source, _ in attribute.ocr_digit_aliases},
+        key=len,
+        reverse=True,
+    )
+    atom_pattern = rf"(?:\d|{'|'.join(alias_patterns)})"
+    numeric_sequence_re = re.compile(
+        rf"(?<!\w){atom_pattern}(?:\s*{atom_pattern})*(?!\w)",
+        flags=re.IGNORECASE,
+    )
+
+    def replace_aliases(match: re.Match[str]) -> str:
+        candidate = match.group()
+        if not any(character.isdecimal() for character in candidate):
+            return candidate
+
+        for source, target in attribute.ocr_digit_aliases:
+            candidate = re.sub(re.escape(source), target, candidate, flags=re.IGNORECASE)
+        return candidate
+
+    return numeric_sequence_re.sub(replace_aliases, value)
 
 
 def normalize_value(value: str, attribute: AttributeDefinition) -> str | None:
