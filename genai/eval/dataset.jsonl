@@ -1,8 +1,16 @@
-{"text": "Задвижка клиновая DN 100, корпус из стали 20.", "attr": "DN", "expected": "100"}
-{"text": "Рабочее давление PN 16 МПа, температура до 200 C.", "attr": "PN", "expected": "16"}
-{"text": "Материал корпуса — нержавеющая сталь 12Х18Н10Т.", "attr": "MATERIAL", "expected": "нержавеющая сталь 12Х18Н10Т"}
-{"text": "Кран шаровой, условный проход Ду50, привод ручной.", "attr": "DN", "expected": "50"}
-{"text": "Опросный лист не содержит данных по давлению.", "attr": "PN", "expected": null}
-{"text": "Затвор поворотный, D N 2 0 0 (OCR-артефакт), фланцевый.", "attr": "DN", "expected": "200"}
-{"text": "Корпус — углеродистая сталь. Уплотнение сальниковое.", "attr": "MATERIAL", "expected": "углеродистая сталь"}
-{"text": "Клапан предохранительный, давление настройки 4,0 МПа.", "attr": "PN", "expected": "4,0"}
+{"id":"dn_standard","text":"Задвижка клиновая DN 100, корпус из стали 20.","attr":"DN","expected":"100","expected_unit":"мм","tags":["positive","standard"]}
+{"id":"pn_standard","text":"Рабочее давление PN 16 МПа, температура до 200 C.","attr":"PN","expected":"16","expected_unit":"МПа","tags":["positive","standard","distractor"]}
+{"id":"material_grade","text":"Материал корпуса — нержавеющая сталь 12Х18Н10Т.","attr":"MATERIAL","expected":"нержавеющая сталь 12Х18Н10Т","expected_unit":null,"tags":["positive","material"]}
+{"id":"dn_synonym","text":"Кран шаровой, условный проход Ду50, привод ручной.","attr":"DN","expected":"50","expected_unit":"мм","tags":["positive","synonym"]}
+{"id":"pn_missing","text":"Опросный лист не содержит данных по давлению.","attr":"PN","expected":null,"expected_unit":null,"tags":["negative","missing"]}
+{"id":"dn_ocr_spaces","text":"Затвор поворотный, D N 2 0 0 (OCR-артефакт), фланцевый.","attr":"DN","expected":"200","expected_unit":"мм","tags":["positive","ocr"]}
+{"id":"material_text","text":"Корпус — углеродистая сталь. Уплотнение сальниковое.","attr":"MATERIAL","expected":"углеродистая сталь","expected_unit":null,"tags":["positive","material"]}
+{"id":"pn_decimal_comma","text":"Клапан предохранительный, давление настройки 4,0 МПа.","attr":"PN","expected":"4,0","expected_unit":"МПа","tags":["positive","decimal"]}
+{"id":"dn_year_distractor","text":"Паспорт изделия 2024 г. Задвижка DN 80, длина 180 мм.","attr":"DN","expected":"80","expected_unit":"мм","tags":["positive","distractor"]}
+{"id":"dn_conflict","text":"В старой редакции DN 80. Актуальное значение: DN 100.","attr":"DN","expected":"100","expected_unit":"мм","tags":["positive","conflict"]}
+{"id":"pn_missing_with_numbers","text":"Задвижка DN 100, температура до 200 C. Давление не указано.","attr":"PN","expected":null,"expected_unit":null,"tags":["negative","distractor"]}
+{"id":"dn_ocr_letters","text":"Номинальный диаметр D N 2 O O мм (буква O вместо нуля).","attr":"DN","expected":"200","expected_unit":"мм","tags":["positive","ocr"]}
+{"id":"pn_decimal_dot","text":"Рабочее давление 1.6 МПа (16 бар).","attr":"PN","expected":"1.6","expected_unit":"МПа","tags":["positive","decimal","distractor"]}
+{"id":"material_multiple_parts","text":"Корпус: сталь 20; шпиндель: 12Х18Н10Т.","attr":"MATERIAL","expected":"сталь 20","expected_unit":null,"tags":["positive","material","distractor"]}
+{"id":"dn_missing_with_year","text":"Паспорт 2023 года. Значение DN не указано.","attr":"DN","expected":null,"expected_unit":null,"tags":["negative","distractor"]}
+{"id":"dn_ocr_value_spaces","text":"Номинальный диаметр: 1 5 0 мм (OCR с пробелами).","attr":"DN","expected":"150","expected_unit":"мм","tags":["positive","ocr"]}
