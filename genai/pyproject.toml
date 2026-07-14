@@ -24,7 +24,7 @@ package = false
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-src = ["app", "eval", "tests"]
+src = ["app", "eval", "tests", "../scripts"]
 
 [tool.ruff.lint]
 select = [
@@ -44,7 +44,7 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "eval"]
+known-first-party = ["app", "eval", "scripts"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -55,7 +55,7 @@ docstring-code-format = true
 
 [tool.mypy]
 python_version = "3.11"
-files = ["app", "eval", "tests"]
+files = ["app", "eval", "tests", "../scripts"]
 plugins = ["pydantic.mypy"]
 strict = true
 warn_unreachable = true
@@ -72,7 +72,7 @@ warn_required_dynamic_aliases = true
 [tool.pytest.ini_options]
 minversion = "8.3"
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", ".."]
 addopts = [
     "-ra",
     "--strict-config",

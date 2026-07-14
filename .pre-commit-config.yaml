@@ -1,0 +1,51 @@
+minimum_pre_commit_version: "4.0.0"
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+
+repos:
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
+  - repo: local
+    hooks:
+      - id: uv-lock
+        name: Проверка uv.lock
+        entry: uv lock --project genai --check
+        language: system
+        files: ^genai/(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run --directory genai --frozen ruff check --config pyproject.toml --fix . ../scripts
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: ruff-format
+        name: Ruff format
+        entry: uv run --directory genai --frozen ruff format --config pyproject.toml . ../scripts
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: conventional-commit
+        name: Conventional Commit
+        entry: uv run --directory genai --frozen python ../scripts/check_conventional.py --file
+        language: system
+        stages: [commit-msg]
+
+      - id: mypy
+        name: Mypy strict
+        entry: uv run --directory genai --frozen mypy
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+
+      - id: pytest
+        name: Pytest
+        entry: env LLM_FAKE=1 uv run --directory genai --frozen pytest
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
