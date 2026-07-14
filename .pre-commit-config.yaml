@@ -32,7 +32,7 @@ repos:
 
       - id: conventional-commit
         name: Conventional Commit
-        entry: uv run --directory genai --frozen python ../scripts/check_conventional.py --file
+        entry: uv run --project genai --frozen python scripts/check_conventional.py --file
         language: system
         stages: [commit-msg]
 
