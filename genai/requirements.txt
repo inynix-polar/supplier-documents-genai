@@ -1,4 +1,0 @@
-pydantic>=2
-pytest
-pytest-asyncio
-# httpx / openai — если подключаешь живой LLM-endpoint
