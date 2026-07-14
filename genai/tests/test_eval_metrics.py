@@ -97,4 +97,5 @@ def test_report_contains_tables_metrics_and_conclusions() -> None:
     assert "baseline" in report
     assert "grounded" in report
     assert "изменение accuracy: +100.0 п.п." in report
+    assert "изменение hallucination rate: -100.0 п.п." in report
     assert "grounded не принял ни одной неподтверждённой цитаты" in report

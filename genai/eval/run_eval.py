@@ -5,9 +5,9 @@ import asyncio
 import hashlib
 import random
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models import ExtractedValue
 from app.modules.extractor import extract_attribute_baseline, extract_attribute_grounded
@@ -30,7 +30,25 @@ class EvalCase(BaseModel):
     attr: AttributeCode
     expected: str | None
     expected_unit: str | None
-    tags: tuple[str, ...]
+    tags: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, tags: tuple[str, ...]) -> tuple[str, ...]:
+        """Не допускать пустые или повторяющиеся срезы датасета."""
+        if any(not tag.strip() for tag in tags) or len(set(tags)) != len(tags):
+            raise ValueError("tags должны быть непустыми и уникальными")
+        return tags
+
+    @model_validator(mode="after")
+    def validate_expected_unit(self) -> Self:
+        """Связать эталонную единицу с canonical unit из реестра."""
+        canonical_unit = get_attribute(self.attr).unit
+        if self.expected is None and self.expected_unit is not None:
+            raise ValueError("отсутствующее значение не может иметь expected_unit")
+        if self.expected is not None and self.expected_unit != canonical_unit:
+            raise ValueError("expected_unit должна совпадать с canonical unit")
+        return self
 
 
 class EvalRow(BaseModel):
@@ -198,7 +216,8 @@ def calculate_metrics(rows: list[EvalRow], strategy: StrategyName) -> EvalMetric
     answered_flags = [result.value is not None for result in results]
     negative_flags = [row.case.expected is None for row in rows]
     unit_flags = [
-        row.case.expected is not None and row.case.expected_unit is not None for row in rows
+        correct and result.value is not None and row.case.expected_unit is not None
+        for row, result, correct in zip(rows, results, correct_flags, strict=True)
     ]
 
     return EvalMetrics(
@@ -283,14 +302,15 @@ def render_report(rows: list[EvalRow], seed: int) -> str:
             ),
             f"{metrics.false_positives}/{metrics.negative_cases}",
             f"{metrics.unit_correct}/{metrics.unit_cases} ({_percent(metrics.unit_accuracy)})",
-            _percent(metrics.coverage),
+            f"{metrics.answered}/{metrics.total} ({_percent(metrics.coverage)})",
             _percent(metrics.selective_accuracy),
-            _percent(metrics.rejection_rate),
+            f"{metrics.rejected}/{metrics.total} ({_percent(metrics.rejection_rate)})",
             f"{metrics.average_calls:.2f}",
         )
         for metrics in (baseline, grounded)
     ]
     accuracy_delta = (grounded.accuracy - baseline.accuracy) * 100
+    hallucination_delta = (grounded.hallucination_rate - baseline.hallucination_rate) * 100
     conclusions = [
         (
             "grounded не принял ни одной неподтверждённой цитаты"
@@ -298,6 +318,7 @@ def render_report(rows: list[EvalRow], seed: int) -> str:
             else "grounded всё ещё принимает неподтверждённые ответы"
         ),
         f"изменение accuracy: {accuracy_delta:+.1f} п.п.",
+        f"изменение hallucination rate: {hallucination_delta:+.1f} п.п.",
         (
             "наличие evidence не гарантирует семантически верный выбор числа; "
             "это видно отдельно по accuracy"
@@ -317,7 +338,7 @@ def render_report(rows: list[EvalRow], seed: int) -> str:
                     "accuracy",
                     "hallucinations/answered",
                     "false positives",
-                    "unit accuracy",
+                    "unit acc on correct",
                     "coverage",
                     "selective acc",
                     "rejections",

@@ -14,6 +14,14 @@ def test_normalizes_spaced_ocr_digits() -> None:
     assert evidence_contains_value("200", "D N 2 0 0", attribute)
 
 
+def test_normalizes_configured_ocr_letter_aliases() -> None:
+    attribute = get_attribute("DN")
+
+    assert "200" in normalize_evidence("D N 2 O О", attribute)
+    assert evidence_contains_value("200", "D N 2 O О", attribute)
+    assert evidence_contains_value("2", "D N 2 O О", attribute) is False
+
+
 def test_numeric_evidence_uses_complete_tokens() -> None:
     attribute = get_attribute("DN")
 

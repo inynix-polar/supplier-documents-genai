@@ -29,6 +29,18 @@ def test_load_rejects_invalid_case(tmp_path: Path) -> None:
         load(dataset_path)
 
 
+def test_eval_case_rejects_unit_for_missing_value() -> None:
+    with pytest.raises(ValidationError, match="expected_unit"):
+        EvalCase(
+            id="pn_invalid",
+            text="Давление отсутствует.",
+            attr="PN",
+            expected=None,
+            expected_unit="МПа",
+            tags=("negative",),
+        )
+
+
 @pytest.mark.asyncio
 async def test_evaluate_is_reproducible(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_FAKE", "1")

@@ -27,9 +27,17 @@ def _collapse_spaced_digits(value: str) -> str:
     )
 
 
+def _apply_ocr_digit_aliases(value: str, attribute: AttributeDefinition) -> str:
+    """Применить только явно разрешённые реестром OCR-замены цифр."""
+    normalized = value
+    for source, target in attribute.ocr_digit_aliases:
+        normalized = normalized.replace(source, target).replace(source.casefold(), target)
+    return normalized
+
+
 def normalize_value(value: str, attribute: AttributeDefinition) -> str | None:
     """Нормализовать значение согласно типу атрибута из реестра."""
-    normalized = _normalize_unicode(value)
+    normalized = _apply_ocr_digit_aliases(_normalize_unicode(value), attribute)
     if len(normalized) > attribute.max_value_length:
         return None
 
@@ -56,7 +64,7 @@ def normalize_value(value: str, attribute: AttributeDefinition) -> str | None:
 
 def normalize_evidence(text: str, attribute: AttributeDefinition) -> str:
     """Нормализовать цитату только для семантической проверки значения."""
-    normalized = _normalize_unicode(text).casefold()
+    normalized = _apply_ocr_digit_aliases(_normalize_unicode(text).casefold(), attribute)
     if attribute.value_kind == "integer":
         return _collapse_spaced_digits(normalized)
     if attribute.value_kind == "decimal":
